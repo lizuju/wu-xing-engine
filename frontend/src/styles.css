@@ -1457,7 +1457,7 @@ button {
   }
 
   .home-hero {
-    flex: 0 1 auto;
+    flex: 1 1 auto;
   }
 
   .hero-orb {
@@ -1474,7 +1474,7 @@ button {
   }
 
   .home-footer-nav {
-    margin-top: auto;
+    margin-top: clamp(14px, 2dvh, 20px);
     margin-bottom: 0;
   }
 
