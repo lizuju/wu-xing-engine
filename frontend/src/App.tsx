@@ -82,9 +82,9 @@ function HomeScreen({
       <div className="home-top">
         <div className="home-title-block">
           <p className="home-greeting">
-            Hi，先照
+            Hi，先照照
             <br />
-            照今天的心情吧～
+            今天的心情吧～
           </p>
         </div>
         <a className="home-avatar-shell" href="https://github.com/lizuju/" target="_blank" rel="noreferrer" aria-label="打开 GitHub 主页">
@@ -204,9 +204,10 @@ function VoiceScreen({
       timerRef.current = window.setInterval(() => {
         setElapsed((current) => current + 1)
       }, 1000)
+      const autoStopDelay = 5000 + Math.floor(Math.random() * 2001)
       autoStopRef.current = window.setTimeout(() => {
         stopRecording()
-      }, 3600)
+      }, autoStopDelay)
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '无法开始录音。')
     }
