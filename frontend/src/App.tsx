@@ -160,6 +160,7 @@ function VoiceScreen({
   const streamRef = useRef<MediaStream | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const timerRef = useRef<number | null>(null)
+  const autoStopRef = useRef<number | null>(null)
   const [isRecording, setIsRecording] = useState(false)
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null)
   const [elapsed, setElapsed] = useState(0)
@@ -169,6 +170,9 @@ function VoiceScreen({
     return () => {
       if (timerRef.current) {
         window.clearInterval(timerRef.current)
+      }
+      if (autoStopRef.current) {
+        window.clearTimeout(autoStopRef.current)
       }
       streamRef.current?.getTracks().forEach((track) => track.stop())
     }
@@ -197,6 +201,7 @@ function VoiceScreen({
         setAudioBlob(blob)
         stream.getTracks().forEach((track) => track.stop())
         streamRef.current = null
+        void onSubmit(blob)
       }
 
       recorder.start()
@@ -204,6 +209,9 @@ function VoiceScreen({
       timerRef.current = window.setInterval(() => {
         setElapsed((current) => current + 1)
       }, 1000)
+      autoStopRef.current = window.setTimeout(() => {
+        stopRecording()
+      }, 3600)
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '无法开始录音。')
     }
@@ -216,6 +224,10 @@ function VoiceScreen({
     if (timerRef.current) {
       window.clearInterval(timerRef.current)
       timerRef.current = null
+    }
+    if (autoStopRef.current) {
+      window.clearTimeout(autoStopRef.current)
+      autoStopRef.current = null
     }
   }
 

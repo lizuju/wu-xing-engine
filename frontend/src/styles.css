@@ -1451,15 +1451,16 @@ button {
   }
 
   .hero-orb {
-    height: clamp(258px, 36dvh, 330px);
+    height: clamp(244px, 33dvh, 300px);
   }
 
   .hero-mascot-image {
-    width: min(100%, 266px);
+    width: min(100%, 250px);
   }
 
   .mode-grid {
     gap: 12px;
+    margin-top: 18px;
   }
 
   .home-footer-nav {
