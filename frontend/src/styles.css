@@ -575,23 +575,6 @@ button {
   background: rgba(255, 255, 255, 0.12);
 }
 
-.voice-complete-button {
-  min-width: 82px;
-  min-height: 50px;
-  padding: 0 20px;
-  border-radius: 18px;
-  color: #fff;
-  font-size: 18px;
-  font-weight: 600;
-  background: linear-gradient(180deg, rgba(131, 207, 255, 0.94), rgba(122, 100, 255, 0.9));
-  box-shadow: 0 10px 22px rgba(87, 116, 255, 0.24);
-}
-
-.voice-complete-button:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
 .voice-orbit {
   margin-top: 8px;
   min-height: clamp(420px, 58vh, 560px);
@@ -1473,12 +1456,19 @@ button {
     margin-top: clamp(24px, 3.4dvh, 32px);
   }
 
+  .quiz-side-card-left {
+    left: -74px;
+  }
+
   .home-footer-nav {
     margin-top: clamp(14px, 2dvh, 20px);
     margin-bottom: 0;
   }
 
-  .voice-screen,
+  .voice-screen {
+    padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  }
+
   .face-screen {
     padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
   }
@@ -1488,7 +1478,7 @@ button {
   }
 
   .voice-topic-block {
-    margin-top: 8px;
+    margin-top: auto;
   }
 
   .face-frame {

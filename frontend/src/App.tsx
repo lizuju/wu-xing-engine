@@ -82,15 +82,15 @@ function HomeScreen({
       <div className="home-top">
         <div className="home-title-block">
           <p className="home-greeting">
-            晚上好，先照
+            Hi，先照
             <br />
             照今天的心情吧～
           </p>
         </div>
-        <div className="home-avatar-shell" aria-hidden="true">
+        <a className="home-avatar-shell" href="https://github.com/lizuju/" target="_blank" rel="noreferrer" aria-label="打开 GitHub 主页">
           <img src={asset('/home/avatar-user.jpg')} alt="" className="home-avatar" />
           <span className="home-avatar-status" />
-        </div>
+        </a>
       </div>
 
       <div className="home-social-pill">
@@ -150,11 +150,9 @@ function HomeScreen({
 function VoiceScreen({
   onBack,
   onSubmit,
-  busy,
 }: {
   onBack: () => void
   onSubmit: (audio: Blob) => Promise<void>
-  busy: boolean
 }) {
   const recorderRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -162,7 +160,6 @@ function VoiceScreen({
   const timerRef = useRef<number | null>(null)
   const autoStopRef = useRef<number | null>(null)
   const [isRecording, setIsRecording] = useState(false)
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null)
   const [elapsed, setElapsed] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
@@ -187,7 +184,6 @@ function VoiceScreen({
       recorderRef.current = recorder
       chunksRef.current = []
       setElapsed(0)
-      setAudioBlob(null)
       setError(null)
 
       recorder.ondataavailable = (event) => {
@@ -198,7 +194,6 @@ function VoiceScreen({
 
       recorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' })
-        setAudioBlob(blob)
         stream.getTracks().forEach((track) => track.stop())
         streamRef.current = null
         void onSubmit(blob)
@@ -231,26 +226,11 @@ function VoiceScreen({
     }
   }
 
-  const submit = async () => {
-    if (!audioBlob) {
-      return
-    }
-    await onSubmit(audioBlob)
-  }
-
   return (
     <PageFrame className="voice-screen" title="语音输入" hideHeader>
       <div className="voice-top">
         <button className="icon-button voice-top-button" type="button" onClick={onBack} aria-label="返回">
           ←
-        </button>
-        <button
-          className="voice-complete-button"
-          type="button"
-          disabled={!audioBlob || busy}
-          onClick={submit}
-        >
-          {busy ? '分析中' : '完成'}
         </button>
       </div>
 
@@ -714,7 +694,7 @@ function App() {
     <main className="app-shell" style={{ '--asset-home-bg': `url("${asset('/home/home-bg.png')}")` } as CSSProperties}>
       <div className="phone-shell">
         {screen === 'home' ? <HomeScreen onVoice={() => setScreen('voice')} onFace={() => setScreen('face')} onQuiz={() => setScreen('quiz')} /> : null}
-        {screen === 'voice' ? <VoiceScreen onBack={reset} onSubmit={handleVoice} busy={busy} /> : null}
+        {screen === 'voice' ? <VoiceScreen onBack={reset} onSubmit={handleVoice} /> : null}
         {screen === 'face' ? <FaceCaptureScreen onBack={reset} onCapture={handleFace} /> : null}
         {screen === 'face-processing' ? <FaceProcessingScreen stream={faceStream} previewUrl={facePreviewUrl} durationMs={faceProcessingDuration} onBack={reset} /> : null}
         {screen === 'quiz' ? <QuizScreen options={quizOptions} onSubmit={handleQuiz} busy={busy} /> : null}
