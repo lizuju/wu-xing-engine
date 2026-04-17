@@ -20,6 +20,15 @@ const weatherCardImages = [
   asset('/result-cards/fear.png'),
   asset('/result-cards/shock.png'),
 ]
+const quizCardImages: Record<string, string> = {
+  'wood-nu': asset('/result-cards/angry.png'),
+  'fire-xi': asset('/result-cards/joy.png'),
+  'earth-si': asset('/result-cards/thought.png'),
+  'metal-you': asset('/result-cards/worry.png'),
+  'metal-bei': asset('/result-cards/sadness.png'),
+  'water-kong': asset('/result-cards/fear.png'),
+  'water-jing': asset('/result-cards/shock.png'),
+}
 
 function PageFrame({
   className,
@@ -99,11 +108,11 @@ function HomeScreen({
         <button className="mode-button mode-button-side" type="button" onClick={onFace}>
           面容识情
         </button>
-        <button className="mode-button mode-button-primary mode-button-center" type="button" onClick={onVoice}>
-          说说此刻
-        </button>
-        <button className="mode-button mode-button-side" type="button" onClick={onQuiz}>
+        <button className="mode-button mode-button-primary mode-button-center" type="button" onClick={onQuiz}>
           七情微测
+        </button>
+        <button className="mode-button mode-button-side" type="button" onClick={onVoice}>
+          说说此刻
         </button>
       </div>
 
@@ -671,7 +680,7 @@ function App() {
       setBusy(true)
       setError(null)
       await quizSession.analyze(optionId)
-      setCardImage(pickRandomCard())
+      setCardImage(quizCardImages[optionId])
       setScreen('card')
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '七情微测失败。')
