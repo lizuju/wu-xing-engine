@@ -12,6 +12,7 @@ class InputMode(StrEnum):
 class MoodResult(BaseModel):
     id: str
     mode: InputMode
+    moodKey: str
     title: str
     subtitle: str
     description: str

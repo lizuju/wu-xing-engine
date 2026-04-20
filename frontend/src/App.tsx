@@ -1,33 +1,24 @@
 import { type CSSProperties, useEffect, useRef, useState } from 'react'
-import { QuizOption } from './domain/mood'
+import { type MoodKey, QuizOption } from './domain/mood'
 import { MoodApiClient } from './services/api'
 import { FaceMoodSession, QuizMoodSession, VoiceMoodSession } from './services/sessions'
 import './styles.css'
 
 type Screen = 'home' | 'voice' | 'face' | 'face-processing' | 'quiz' | 'card'
 
-const client = new MoodApiClient()
+const client = new MoodApiClient(import.meta.env.VITE_API_BASE_URL)
 const voiceSession = new VoiceMoodSession(client)
 const faceSession = new FaceMoodSession(client)
 const quizSession = new QuizMoodSession(client)
 const asset = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\/+/, '')}`
-const weatherCardImages = [
-  asset('/result-cards/joy.png'),
-  asset('/result-cards/worry.png'),
-  asset('/result-cards/sadness.png'),
-  asset('/result-cards/angry.png'),
-  asset('/result-cards/thought.png'),
-  asset('/result-cards/fear.png'),
-  asset('/result-cards/shock.png'),
-]
-const quizCardImages: Record<string, string> = {
-  'wood-nu': asset('/result-cards/angry.png'),
-  'fire-xi': asset('/result-cards/joy.png'),
-  'earth-si': asset('/result-cards/thought.png'),
-  'metal-you': asset('/result-cards/worry.png'),
-  'metal-bei': asset('/result-cards/sadness.png'),
-  'water-kong': asset('/result-cards/fear.png'),
-  'water-jing': asset('/result-cards/shock.png'),
+const weatherCardImages: Record<MoodKey, string> = {
+  喜: asset('/result-cards/joy.png'),
+  忧: asset('/result-cards/worry.png'),
+  悲: asset('/result-cards/sadness.png'),
+  怒: asset('/result-cards/angry.png'),
+  思: asset('/result-cards/thought.png'),
+  恐: asset('/result-cards/fear.png'),
+  惊: asset('/result-cards/shock.png'),
 }
 
 function PageFrame({
@@ -618,17 +609,12 @@ function App() {
       })
   }, [])
 
-  const pickRandomCard = () => {
-    const index = Math.floor(Math.random() * weatherCardImages.length)
-    return weatherCardImages[index]
-  }
-
   const handleVoice = async (audio: Blob) => {
     try {
       setBusy(true)
       setError(null)
-      await voiceSession.analyze(audio)
-      setCardImage(pickRandomCard())
+      const result = await voiceSession.analyze(audio)
+      setCardImage(weatherCardImages[result.moodKey])
       setScreen('card')
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '语音分析失败。')
@@ -651,13 +637,12 @@ function App() {
       faceStreamRef.current = stream
       setFaceStream(stream)
       setScreen('face-processing')
-      const [nextResult] = await Promise.all([
+      const [result] = await Promise.all([
         faceSession.analyze(image),
         new Promise((resolve) => window.setTimeout(resolve, faceProcessingDuration)),
       ])
-      void nextResult
       stopFaceStream()
-      setCardImage(pickRandomCard())
+      setCardImage(weatherCardImages[result.moodKey])
       setScreen('card')
     } catch (caught) {
       stopFaceStream()
@@ -672,8 +657,8 @@ function App() {
     try {
       setBusy(true)
       setError(null)
-      await quizSession.analyze(optionId)
-      setCardImage(quizCardImages[optionId])
+      const result = await quizSession.analyze(optionId)
+      setCardImage(weatherCardImages[result.moodKey])
       setScreen('card')
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '七情微测失败。')

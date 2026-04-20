@@ -65,6 +65,7 @@ const fallbackQuizOptions: QuizOptionDTO[] = [
 const fallbackMoodResult: MoodResultDTO = {
   id: 'static-demo-result',
   mode: 'quiz',
+  moodKey: '思',
   title: '今日心象',
   subtitle: '静态演示模式',
   description: 'GitHub Pages 只托管前端，这里使用本地静态结果继续完成演示流程。',

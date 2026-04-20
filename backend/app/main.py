@@ -1,17 +1,24 @@
 from pathlib import Path
 
 from fastapi import FastAPI, File, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from .models import MoodResult, QuizOption, QuizSubmission
-from .services import FaceMoodAnalyzer, QuizMoodAnalyzer, QuizResourceStore, VoiceMoodAnalyzer
+from .services import FaceMoodAnalyzer, LlmMoodAnalyzer, QuizMoodAnalyzer, QuizResourceStore, VoiceMoodAnalyzer
 
 app = FastAPI(title="Wu Xing Engine")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 resource_store = QuizResourceStore()
-voice_analyzer = VoiceMoodAnalyzer()
-face_analyzer = FaceMoodAnalyzer()
+voice_analyzer = LlmMoodAnalyzer(VoiceMoodAnalyzer())
+face_analyzer = LlmMoodAnalyzer(FaceMoodAnalyzer())
 quiz_analyzer = QuizMoodAnalyzer(resource_store)
 
 
@@ -28,13 +35,13 @@ def quiz_options() -> list[QuizOption]:
 @app.post("/api/mood/voice", response_model=MoodResult)
 async def analyze_voice(audio: UploadFile = File(...)) -> MoodResult:
     payload = await audio.read()
-    return voice_analyzer.analyze(len(payload))
+    return voice_analyzer.analyze(payload)
 
 
 @app.post("/api/mood/face", response_model=MoodResult)
 async def analyze_face(image: UploadFile = File(...)) -> MoodResult:
     payload = await image.read()
-    return face_analyzer.analyze(len(payload))
+    return face_analyzer.analyze_face(payload)
 
 
 @app.post("/api/mood/quiz", response_model=MoodResult)
