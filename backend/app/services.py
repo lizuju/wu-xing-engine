@@ -344,6 +344,7 @@ class LlmMoodAnalyzer(BaseMoodAnalyzer):
                     }
                 ]
             )
+            logger.info("LLM face moodKey: %s, image bytes: %s", mood_key, len(payload))
             return self._build_llm_result(
                 mode=InputMode.FACE,
                 mood_key=mood_key,

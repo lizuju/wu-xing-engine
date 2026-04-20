@@ -302,6 +302,7 @@ function FaceCaptureScreen({
         streamRef.current = stream
         if (videoRef.current) {
           videoRef.current.srcObject = stream
+          void videoRef.current.play()
         }
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : '无法访问摄像头。')
@@ -321,6 +322,13 @@ function FaceCaptureScreen({
   const capture = async () => {
     const video = videoRef.current
     if (!video) {
+      return
+    }
+    if (!video.videoWidth || !video.videoHeight) {
+      await new Promise((resolve) => window.setTimeout(resolve, 300))
+    }
+    if (!video.videoWidth || !video.videoHeight) {
+      setError('摄像头画面还没有准备好，请稍后再试。')
       return
     }
 
