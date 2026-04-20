@@ -276,7 +276,7 @@ class LlmMoodAnalyzer(BaseMoodAnalyzer):
                 return self._analyze_bytes(payload)
             return self._fallback(payload)
         except (KeyError, TypeError, ValueError, urllib.error.URLError) as caught:
-            logger.warning("LLM voice analysis failed: %s", caught)
+            logger.warning("LLM voice analysis failed: %s", self._error_message(caught))
             return self._fallback(payload)
 
     def _enabled(self) -> bool:
@@ -291,7 +291,7 @@ class LlmMoodAnalyzer(BaseMoodAnalyzer):
             else:
                 logger.warning("ASR returned empty transcript")
         except (KeyError, TypeError, ValueError, urllib.error.URLError) as caught:
-            logger.warning("ASR failed: %s", caught)
+            logger.warning("ASR failed: %s", self._error_message(caught))
             transcript = ""
 
         content = (
@@ -338,7 +338,7 @@ class LlmMoodAnalyzer(BaseMoodAnalyzer):
                             },
                             {
                                 "type": "image_url",
-                                "image_url": {"url": f"data:image/png;base64,{image}"},
+                                "image_url": {"url": f"data:image/jpeg;base64,{image}"},
                             },
                         ],
                     }
@@ -351,7 +351,7 @@ class LlmMoodAnalyzer(BaseMoodAnalyzer):
                 fallback_description="我只根据当前画面的表情氛围做即时情志判断，不保存照片，也不识别身份。",
             )
         except (KeyError, TypeError, ValueError, urllib.error.URLError) as caught:
-            logger.warning("LLM face analysis failed: %s", caught)
+            logger.warning("LLM face analysis failed: %s", self._error_message(caught))
             return self._fallback(payload)
 
     def _fallback(self, payload: object) -> MoodResult:
@@ -417,6 +417,12 @@ class LlmMoodAnalyzer(BaseMoodAnalyzer):
             mascot_id=f"llm-{mood_key}",
             tips=["这只是此刻情志，不代表整天", "先照顾身体感受，再处理问题", "可以稍后重新测一次对照变化"],
         )
+
+    def _error_message(self, caught: object) -> str:
+        if isinstance(caught, urllib.error.HTTPError):
+            body = caught.read().decode("utf-8", errors="replace")
+            return f"{caught}; response={body}"
+        return str(caught)
 
 
 class QuizMoodAnalyzer(BaseMoodAnalyzer):

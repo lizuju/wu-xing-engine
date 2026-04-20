@@ -762,7 +762,7 @@ button {
 }
 
 .camera-preview {
-  opacity: 1;
+  opacity: 0;
 }
 
 .capture-preview {

@@ -341,7 +341,7 @@ function FaceCaptureScreen({
     }
 
     context.drawImage(video, 0, 0, canvas.width, canvas.height)
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'))
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.86))
     if (!blob) {
       return
     }
