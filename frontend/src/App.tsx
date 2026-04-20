@@ -276,7 +276,7 @@ function FaceCaptureScreen({
   onCapture,
 }: {
   onBack: () => void
-  onCapture: (blob: Blob, previewUrl: string, stream: MediaStream | null) => Promise<void>
+  onCapture: (blobs: Blob[], previewUrl: string, stream: MediaStream | null) => Promise<void>
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -319,6 +319,21 @@ function FaceCaptureScreen({
     }
   }, [])
 
+  const captureFrame = async (video: HTMLVideoElement) => {
+    const canvas = document.createElement('canvas')
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    const context = canvas.getContext('2d')
+    if (!context) {
+      return null
+    }
+
+    context.translate(canvas.width, 0)
+    context.scale(-1, 1)
+    context.drawImage(video, 0, 0, canvas.width, canvas.height)
+    return await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.86))
+  }
+
   const capture = async () => {
     const video = videoRef.current
     if (!video) {
@@ -332,21 +347,21 @@ function FaceCaptureScreen({
       return
     }
 
-    const canvas = document.createElement('canvas')
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
-    const context = canvas.getContext('2d')
-    if (!context) {
-      return
+    const frames: Blob[] = []
+    for (let index = 0; index < 3; index += 1) {
+      const frame = await captureFrame(video)
+      if (frame) {
+        frames.push(frame)
+      }
+      if (index < 2) {
+        await new Promise((resolve) => window.setTimeout(resolve, 1200))
+      }
     }
-
-    context.drawImage(video, 0, 0, canvas.width, canvas.height)
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.86))
-    if (!blob) {
+    if (!frames.length) {
       return
     }
     handedOffRef.current = true
-    await onCapture(blob, URL.createObjectURL(blob), streamRef.current)
+    await onCapture(frames, URL.createObjectURL(frames[0]), streamRef.current)
   }
 
   return (
@@ -637,7 +652,7 @@ function App() {
     setFaceStream(null)
   }
 
-  const handleFace = async (image: Blob, previewUrl: string, stream: MediaStream | null) => {
+  const handleFace = async (images: Blob[], previewUrl: string, stream: MediaStream | null) => {
     try {
       setBusy(true)
       setError(null)
@@ -646,7 +661,7 @@ function App() {
       setFaceStream(stream)
       setScreen('face-processing')
       const [result] = await Promise.all([
-        faceSession.analyze(image),
+        faceSession.analyze(images),
         new Promise((resolve) => window.setTimeout(resolve, faceProcessingDuration)),
       ])
       stopFaceStream()

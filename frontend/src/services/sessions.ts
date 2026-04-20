@@ -35,14 +35,14 @@ export class VoiceMoodSession extends MoodSession<Blob> {
   }
 }
 
-export class FaceMoodSession extends MoodSession<Blob> {
+export class FaceMoodSession extends MoodSession<Blob[]> {
   async start() {
     if (!navigator.mediaDevices?.getUserMedia) {
       throw new Error('当前浏览器不支持摄像头访问。')
     }
   }
 
-  async analyze(payload: Blob) {
+  async analyze(payload: Blob[]) {
     return this.save(await this.client.analyzeFace(payload))
   }
 }

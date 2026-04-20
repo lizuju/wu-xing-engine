@@ -39,8 +39,16 @@ async def analyze_voice(audio: UploadFile = File(...)) -> MoodResult:
 
 
 @app.post("/api/mood/face", response_model=MoodResult)
-async def analyze_face(image: UploadFile = File(...)) -> MoodResult:
-    payload = await image.read()
+async def analyze_face(
+    images: list[UploadFile] | None = File(default=None),
+    image: UploadFile | None = File(default=None),
+) -> MoodResult:
+    if images:
+        payload = [await item.read() for item in images]
+    elif image:
+        payload = await image.read()
+    else:
+        payload = b""
     return face_analyzer.analyze_face(payload)
 
 

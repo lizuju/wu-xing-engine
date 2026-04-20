@@ -317,34 +317,39 @@ class LlmMoodAnalyzer(BaseMoodAnalyzer):
             fallback_description="用户刚完成一段短语音表达。请把它视为此刻情绪的入口，而不是确定诊断。",
         )
 
-    def analyze_face(self, payload: bytes) -> MoodResult:
+    def analyze_face(self, payload: bytes | list[bytes]) -> MoodResult:
         if not self._enabled():
             return self._fallback(payload)
 
         try:
-            image = base64.b64encode(payload).decode("ascii")
+            frames = payload if isinstance(payload, list) else [payload]
+            content: list[dict[str, object]] = [
+                {
+                    "type": "text",
+                    "text": (
+                        "请根据接下来 2 到 3 秒内连续采样的面部画面，判断此刻更接近哪一种情志。"
+                        "不要识别身份、年龄、性别，不要做医学诊断。"
+                        "必须在七种情志里选一个，不要默认选择思：怒、喜、思、忧、悲、恐、惊。"
+                    ),
+                }
+            ]
+            for frame in frames[:3]:
+                image = base64.b64encode(frame).decode("ascii")
+                content.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/jpeg;base64,{image}"},
+                    }
+                )
             mood_key = self._complete_mood_key(
                 [
                     {
                         "role": "user",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": (
-                                    "请只根据这张面部画面的表情氛围判断此刻更接近哪一种情志。"
-                                    "不要识别身份、年龄、性别，不要做医学诊断。"
-                                    "只能在以下七种情志里选一个：怒、喜、思、忧、悲、恐、惊。"
-                                ),
-                            },
-                            {
-                                "type": "image_url",
-                                "image_url": {"url": f"data:image/jpeg;base64,{image}"},
-                            },
-                        ],
+                        "content": content,
                     }
                 ]
             )
-            logger.info("LLM face moodKey: %s, image bytes: %s", mood_key, len(payload))
+            logger.info("LLM face moodKey: %s, frame count: %s, image bytes: %s", mood_key, len(frames), sum(len(frame) for frame in frames))
             return self._build_llm_result(
                 mode=InputMode.FACE,
                 mood_key=mood_key,
@@ -355,6 +360,8 @@ class LlmMoodAnalyzer(BaseMoodAnalyzer):
             return self._fallback(payload)
 
     def _fallback(self, payload: object) -> MoodResult:
+        if isinstance(payload, list):
+            return self.fallback.analyze(sum(len(item) for item in payload))
         if isinstance(payload, bytes):
             return self.fallback.analyze(len(payload))
         return self.fallback.analyze(payload)

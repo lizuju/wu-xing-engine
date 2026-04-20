@@ -105,10 +105,12 @@ export class MoodApiClient {
     }
   }
 
-  async analyzeFace(image: Blob) {
+  async analyzeFace(images: Blob[]) {
     try {
       const formData = new FormData()
-      formData.append('image', image, 'face-capture.png')
+      images.forEach((image, index) => {
+        formData.append('images', image, `face-capture-${index}.jpg`)
+      })
       const payload = await this.request<MoodResultDTO>('/api/mood/face', {
         method: 'POST',
         body: formData,
