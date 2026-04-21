@@ -327,9 +327,14 @@ class LlmMoodAnalyzer(BaseMoodAnalyzer):
                 {
                     "type": "text",
                     "text": (
-                        "请根据接下来 2 到 3 秒内连续采样的面部画面，判断此刻更接近哪一种情志。"
-                        "不要识别身份、年龄、性别，不要做医学诊断。"
-                        "必须在七种情志里选一个，不要默认选择思：怒、喜、思、忧、悲、恐、惊。"
+                        "请根据接下来 2 到 3 秒内连续采样的面部画面做相对分类，不要判断身份、年龄、性别，也不要做医学诊断。"
+                        "不要把平静、专注、无明显表情都默认归为思。"
+                        "按这些线索强制选择：喜=嘴角上扬或眼神放松；怒=眉间紧、嘴唇压紧或下颌紧绷；"
+                        "忧=眉眼下压、担心或目光不稳定；悲=嘴角下垂、眼神低落或面部松垮；"
+                        "恐=眼睛睁大、紧张或防御感；惊=睁眼、张口或短促变化明显；"
+                        "思=只有明显沉思、目光内收、专注停顿时选择。"
+                        "如果多个接近，优先选择除思以外表情线索更明显的一项。"
+                        '只输出 JSON：{"moodKey":"怒|喜|思|忧|悲|恐|惊","confidence":0到1之间数字,"secondMoodKey":"怒|喜|思|忧|悲|恐|惊"}。'
                     ),
                 }
             ]
@@ -341,7 +346,7 @@ class LlmMoodAnalyzer(BaseMoodAnalyzer):
                         "image_url": {"url": f"data:image/jpeg;base64,{image}"},
                     }
                 )
-            mood_key = self._complete_mood_key(
+            mood_key, raw_mood_key, confidence, second_mood_key = self._complete_face_mood(
                 [
                     {
                         "role": "user",
@@ -349,7 +354,15 @@ class LlmMoodAnalyzer(BaseMoodAnalyzer):
                     }
                 ]
             )
-            logger.info("LLM face moodKey: %s, frame count: %s, image bytes: %s", mood_key, len(frames), sum(len(frame) for frame in frames))
+            logger.info(
+                "LLM face moodKey: %s, raw: %s, confidence: %s, second: %s, frame count: %s, image bytes: %s",
+                mood_key,
+                raw_mood_key,
+                confidence,
+                second_mood_key,
+                len(frames),
+                sum(len(frame) for frame in frames),
+            )
             return self._build_llm_result(
                 mode=InputMode.FACE,
                 mood_key=mood_key,
@@ -399,6 +412,45 @@ class LlmMoodAnalyzer(BaseMoodAnalyzer):
         if mood_key not in MOOD_PROFILES:
             raise ValueError("Invalid moodKey")
         return mood_key
+
+    def _complete_face_mood(self, messages: list[dict[str, object]]) -> tuple[str, str, float, str]:
+        payload = {
+            "model": self.model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        "你是一个面部情志分类器。只输出 JSON，不要输出 Markdown。"
+                        '格式必须是 {"moodKey":"怒|喜|思|忧|悲|恐|惊","confidence":0.0到1.0,"secondMoodKey":"怒|喜|思|忧|悲|恐|惊"}。'
+                    ),
+                },
+                *messages,
+            ],
+            "temperature": 0.35,
+        }
+        request = urllib.request.Request(
+            f"{self.base_url}/chat/completions",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(request, timeout=18) as response:
+            data = json.loads(response.read().decode("utf-8"))
+
+        content = data["choices"][0]["message"]["content"]
+        parsed = json.loads(self._extract_json(str(content)))
+        mood_key = str(parsed["moodKey"])
+        second_mood_key = str(parsed.get("secondMoodKey", ""))
+        confidence = float(parsed.get("confidence", 1))
+        if mood_key not in MOOD_PROFILES:
+            raise ValueError("Invalid moodKey")
+        if second_mood_key not in MOOD_PROFILES:
+            second_mood_key = mood_key
+        final_mood_key = second_mood_key if mood_key == "思" and confidence < 0.6 and second_mood_key != "思" else mood_key
+        return final_mood_key, mood_key, confidence, second_mood_key
 
     def _extract_json(self, content: str) -> str:
         start = content.find("{")
